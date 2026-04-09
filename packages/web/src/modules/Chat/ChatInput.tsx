@@ -80,8 +80,6 @@ const ExpressionAsync = loadable(
 
 let searchExpressionTimer: number = 0;
 
-let inputIME = false;
-
 function ChatInput(props: InputAreaProps) {
     const action = useAction();
     const isLogin = useIsLogin();
@@ -133,6 +131,7 @@ function ChatInput(props: InputAreaProps) {
         `bulita-chat-${Math.random().toString(36).slice(2, 10)}`,
     );
     const [textareaReadonly, setTextareaReadonly] = useState(true);
+    const inputIMERef = useRef(false);
 
     const { minHeight, maxHeight } = props;
 
@@ -798,7 +797,11 @@ function ChatInput(props: InputAreaProps) {
 
     async function handleInputKeyDown(e: any) {
         const { shiftKey, key } = e;
-        if (!shiftKey && key === 'Enter' && !inputIME) {
+        const isComposing =
+            e?.nativeEvent?.isComposing === true ||
+            e?.isComposing === true ||
+            e?.keyCode === 229;
+        if (!shiftKey && key === 'Enter' && !isComposing) {
             e.preventDefault();
             sendTextMessage();
         }
@@ -829,17 +832,17 @@ function ChatInput(props: InputAreaProps) {
                     return;
                 }
                 // 如果是输入中文, 并且不是空格键, 忽略输入
-                if (inputIME && key !== ' ') {
+                if (inputIMERef.current && key !== ' ') {
                     return;
                 }
                 // 如果是不是输入中文, 并且是空格键, 则@计算模式结束
-                if (!inputIME && key === ' ') {
+                if (!inputIMERef.current && key === ' ') {
                     setAt({ enable: false, content: '' });
                     return;
                 }
 
                 // 如果是正在输入中文, 则直接返回, 避免取到拼音字母
-                if (inputIME) {
+                if (inputIMERef.current) {
                     return;
                 }
                 // @ts-ignore
@@ -851,7 +854,7 @@ function ChatInput(props: InputAreaProps) {
         } else if (enableSearchExpression) {
             // Set timer to get current input value
             setTimeout(() => {
-                if (inputIME) {
+                if (inputIMERef.current) {
                     return;
                 }
                 if ($input.current?.value) {
@@ -868,7 +871,10 @@ function ChatInput(props: InputAreaProps) {
         if (!isMobile) {
             return;
         }
-        if (e.inputType === 'insertLineBreak' && !inputIME) {
+        const isComposing =
+            e?.nativeEvent?.isComposing === true ||
+            e?.isComposing === true;
+        if (e.inputType === 'insertLineBreak' && !isComposing) {
             e.preventDefault();
             sendTextMessage();
         }
@@ -1100,10 +1106,10 @@ function ChatInput(props: InputAreaProps) {
                     onKeyDown={handleInputKeyDown}
                     onPaste={handlePaste}
                     onCompositionStart={() => {
-                        inputIME = true;
+                        inputIMERef.current = true;
                     }}
                     onCompositionEnd={() => {
-                        inputIME = false;
+                        inputIMERef.current = false;
                     }}
                     onFocus={() => {
                         setTextareaReadonly(false);
@@ -1112,6 +1118,7 @@ function ChatInput(props: InputAreaProps) {
                         setInputHasContent(v.length > 0);
                     }}
                     onBlur={() => {
+                        inputIMERef.current = false;
                         setTextareaReadonly(true);
                         toggleInputFocus(false);
                     }}

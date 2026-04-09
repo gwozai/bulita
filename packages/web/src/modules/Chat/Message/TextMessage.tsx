@@ -10,10 +10,8 @@ interface TextMessageProps {
     content: string;
 }
 
-function TextMessage(props: TextMessageProps) {
-    // const reg = /(http:\/\/|https:\/\/|www)(([\w#]|=|\?|\.|\/|&|~|-|[\u200B-\u200D\uFEFF])+)/g;
-    // eslint-disable-next-line react/destructuring-assignment
-    const content = props.content
+function formatTextContent(raw: string) {
+    return raw
         .replace(/<[^>]*?>/gi, '')
         .replace(/(.*?)<\/[^>]*?>/gi, '')
         .replace(/\n/g, '<br>')
@@ -33,9 +31,67 @@ function TextMessage(props: TextMessageProps) {
             }
             return r;
         });
+}
+
+function parseQuotedText(raw: string) {
+    const separatorIndex = raw.indexOf('\n\n');
+    if (separatorIndex <= 0) {
+        return null;
+    }
+    const quoteLine = raw.slice(0, separatorIndex).trim();
+    const mainText = raw.slice(separatorIndex + 2);
+    if (!quoteLine.startsWith('> 引用 ')) {
+        return null;
+    }
+    const quotedRaw = quoteLine.replace('> 引用 ', '').trim();
+    const colonIndex = quotedRaw.indexOf(':');
+    if (colonIndex <= 0) {
+        return {
+            title: '引用消息',
+            preview: quotedRaw,
+            message: mainText,
+        };
+    }
+    const username = quotedRaw.slice(0, colonIndex).trim();
+    const preview = quotedRaw.slice(colonIndex + 1).trim();
+    return {
+        title: `引用 ${username}`,
+        preview,
+        message: mainText,
+    };
+}
+
+function TextMessage(props: TextMessageProps) {
+    const quoteData = parseQuotedText(props.content);
+    if (quoteData) {
+        const quotePreview = formatTextContent(quoteData.preview);
+        const mainContent = formatTextContent(quoteData.message);
+        return (
+            <div className={`${Style.textMessage} ${Style.quotedTextMessage}`}>
+                <div className={Style.quoteCard}>
+                    <p className={Style.quoteTitle}>{quoteData.title}</p>
+                    <div
+                        className={Style.quotePreview}
+                        // eslint-disable-next-line react/no-danger
+                        dangerouslySetInnerHTML={{ __html: quotePreview }}
+                    />
+                </div>
+                {quoteData.message.trim() ? (
+                    <div
+                        className={Style.quoteMain}
+                        // eslint-disable-next-line react/no-danger
+                        dangerouslySetInnerHTML={{ __html: mainContent }}
+                    />
+                ) : null}
+            </div>
+        );
+    }
+
+    const content = formatTextContent(props.content);
 
     return (
         <div
+            className={Style.textMessage}
             style={{ wordWrap: 'break-word' }}
             // eslint-disable-next-line react/no-danger
             dangerouslySetInnerHTML={{ __html: content }}

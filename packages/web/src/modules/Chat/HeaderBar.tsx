@@ -131,20 +131,14 @@ function HeaderBar(props: Props) {
                                 : '展开会话列表'
                         }
                     >
-                        <svg
-                            width="20"
-                            height="20"
-                            viewBox="0 0 20 20"
-                            fill="currentColor"
-                            xmlns="http://www.w3.org/2000/svg"
-                            className={
+                        <i
+                            className={`iconfont icon-friends ${
                                 functionBarAndLinkmanListVisible
                                     ? Style.friendsToggleIconExpanded
                                     : Style.friendsToggleIconCollapsed
-                            }
-                        >
-                            <path d="M13.5 3.5L5.5 10L13.5 16.5V3.5Z" />
-                        </svg>
+                            }`}
+                            aria-hidden="true"
+                        />
                     </button>
                 )}
             </div>

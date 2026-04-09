@@ -6,7 +6,11 @@ import getFriendId from '@bulita/utils/getFriendId';
 import convertMessage from '@bulita/utils/convertMessage';
 import config from '@bulita/config/client';
 import Message from '../../components/Message';
-import { loginWithGoogle, getLinkmansLastMessagesV2 } from '../../service';
+import {
+    loginWithGoogle,
+    getLinkmansLastMessagesV2,
+    getPublicSystemConfig,
+} from '../../service';
 import { Message as MessageType } from '../../state/reducer';
 import { ActionTypes } from '../../state/action';
 import Style from './LoginRegister.less';
@@ -148,9 +152,31 @@ function GoogleLogin({
                                 ),
                             ];
 
-                            if (linkmanIds.length > 0) {
-                                const linkmanMessages =
-                                    await getLinkmansLastMessagesV2(linkmanIds);
+                            const [publicConfig, linkmanMessages] = await Promise.all([
+                                getPublicSystemConfig(),
+                                linkmanIds.length > 0
+                                    ? getLinkmansLastMessagesV2(linkmanIds)
+                                    : Promise.resolve(null),
+                            ]);
+                            if (publicConfig?.defaultBotName !== undefined) {
+                                dispatch({
+                                    type: ActionTypes.SetStatus,
+                                    payload: {
+                                        key: 'defaultBotName',
+                                        value: publicConfig.defaultBotName || '',
+                                    },
+                                });
+                            }
+                            if (publicConfig?.maxGroupNum !== undefined) {
+                                dispatch({
+                                    type: ActionTypes.SetStatus,
+                                    payload: {
+                                        key: 'maxGroupNum',
+                                        value: publicConfig.maxGroupNum,
+                                    },
+                                });
+                            }
+                            if (linkmanMessages) {
                                 Object.values(linkmanMessages).forEach(
                                     // @ts-ignore
                                     ({ messages }: { messages: MessageType[] }) => {
