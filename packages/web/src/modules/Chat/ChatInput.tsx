@@ -130,7 +130,6 @@ function ChatInput(props: InputAreaProps) {
     const chatInputNameRef = useRef(
         `bulita-chat-${Math.random().toString(36).slice(2, 10)}`,
     );
-    const [textareaReadonly, setTextareaReadonly] = useState(true);
     const inputIMERef = useRef(false);
 
     const { minHeight, maxHeight } = props;
@@ -235,6 +234,12 @@ function ChatInput(props: InputAreaProps) {
             input.value += value;
             input.focus();
         }
+        setInputHasContent((input.value || '').trim().length > 0);
+        setTextAreaHeight(
+            $input.current as unknown as HTMLTextAreaElement,
+            minHeight,
+            maxHeight,
+        );
     }
 
     function handleSelectExpression(expression: string) {
@@ -880,12 +885,6 @@ function ChatInput(props: InputAreaProps) {
         }
     }
 
-    function handlePrepareTextarea() {
-        if (textareaReadonly) {
-            setTextareaReadonly(false);
-        }
-    }
-
     function getSuggestion(): typeof linkman.onlineMembers {
         if (!at.enable || linkman.type !== 'group') {
             return [];
@@ -1098,10 +1097,7 @@ function ChatInput(props: InputAreaProps) {
                     data-1p-ignore="true"
                     enterKeyHint={isMobile ? 'send' : 'enter'}
                     name={chatInputNameRef.current}
-                    readOnly={textareaReadonly}
                     ref={$input}
-                    onMouseDown={handlePrepareTextarea}
-                    onTouchStart={handlePrepareTextarea}
                     onBeforeInput={handleBeforeInput}
                     onKeyDown={handleInputKeyDown}
                     onPaste={handlePaste}
@@ -1112,14 +1108,12 @@ function ChatInput(props: InputAreaProps) {
                         inputIMERef.current = false;
                     }}
                     onFocus={() => {
-                        setTextareaReadonly(false);
                         toggleInputFocus(true);
                         const v = ($input.current?.value ?? '').trim();
                         setInputHasContent(v.length > 0);
                     }}
                     onBlur={() => {
                         inputIMERef.current = false;
-                        setTextareaReadonly(true);
                         toggleInputFocus(false);
                     }}
                     onInput={({ currentTarget }) => {
